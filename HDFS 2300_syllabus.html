@@ -1,0 +1,530 @@
+<title>HDFS 2300 — Family Interaction Processes</title>
+<style>
+  :root {
+    --paper: #FAF7F1;
+    --paper-raised: #FFFFFF;
+    --ink: #201E22;
+    --ink-soft: #5B5660;
+    --ink-faint: #8B8590;
+    --accent: #7C4A5C;
+    --accent-strong: #5E3547;
+    --accent-soft: #EFE0E3;
+    --line: #E1D9CB;
+    --note: #93711E;
+    --note-soft: #F4E9D0;
+    --shadow: 0 1px 2px rgba(32,30,34,0.04), 0 6px 20px rgba(32,30,34,0.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #16141A;
+      --paper-raised: #1E1B22;
+      --ink: #EDE7E2;
+      --ink-soft: #B4ADB8;
+      --ink-faint: #726C78;
+      --accent: #E0A8BB;
+      --accent-strong: #F0C4D2;
+      --accent-soft: #3A2733;
+      --line: #322C34;
+      --note: #E0B565;
+      --note-soft: #3A2F1C;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #16141A; --paper-raised: #1E1B22; --ink: #EDE7E2; --ink-soft: #B4ADB8;
+    --ink-faint: #726C78; --accent: #E0A8BB; --accent-strong: #F0C4D2; --accent-soft: #3A2733;
+    --line: #322C34; --note: #E0B565; --note-soft: #3A2F1C;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
+  }
+  :root[data-theme="light"] {
+    --paper: #FAF7F1; --paper-raised: #FFFFFF; --ink: #201E22; --ink-soft: #5B5660;
+    --ink-faint: #8B8590; --accent: #7C4A5C; --accent-strong: #5E3547; --accent-soft: #EFE0E3;
+    --line: #E1D9CB; --note: #93711E; --note-soft: #F4E9D0;
+    --shadow: 0 1px 2px rgba(32,30,34,0.04), 0 6px 20px rgba(32,30,34,0.06);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Optima", "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .display { font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, "Times New Roman", serif; }
+  .num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+
+  a { color: var(--accent-strong); }
+  a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .shell { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 0; max-width: 1180px; margin: 0 auto; }
+  @media (max-width: 860px) { .shell { grid-template-columns: 1fr; } }
+
+  nav.toc {
+    position: sticky; top: 0; align-self: start; height: 100vh; overflow-y: auto;
+    padding: 2.5rem 1.25rem 2rem 1.5rem; border-right: 1px solid var(--line);
+  }
+  @media (max-width: 860px) {
+    nav.toc {
+      position: sticky; top: 0; height: auto; z-index: 10; background: var(--paper);
+      border-right: none; border-bottom: 1px solid var(--line); padding: 0.9rem 1.25rem;
+      overflow-x: auto; overflow-y: hidden; white-space: nowrap;
+    }
+  }
+  .toc-mark { font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-faint); margin: 0 0 0.9rem; }
+  @media (max-width: 860px) { .toc-mark { display: none; } }
+  nav.toc ul { list-style: none; margin: 0; padding: 0; }
+  @media (max-width: 860px) { nav.toc ul { display: inline-flex; gap: 1.1rem; } }
+  nav.toc li + li { margin-top: 0.55rem; }
+  @media (max-width: 860px) { nav.toc li + li { margin-top: 0; } }
+  nav.toc a { display: flex; align-items: center; gap: 0.55rem; text-decoration: none; color: var(--ink-soft); font-size: 0.9rem; padding: 0.15rem 0; }
+  nav.toc a:hover { color: var(--accent-strong); }
+  nav.toc .glyph { width: 7px; height: 7px; flex: none; border: 1.4px solid var(--ink-faint); border-radius: 50%; }
+  nav.toc a:hover .glyph { border-color: var(--accent); background: var(--accent); }
+
+  main { padding: 2.5rem clamp(1.25rem, 4vw, 3.5rem) 5rem; min-width: 0; }
+
+  .masthead { margin-bottom: 3rem; }
+  .eyebrow { font-size: 0.72rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent-strong); margin: 0 0 0.6rem; }
+  h1.course-title {
+    font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+    font-size: clamp(1.8rem, 3.4vw, 2.6rem); font-weight: 500; line-height: 1.15; margin: 0 0 1.4rem; text-wrap: balance;
+  }
+  .subject-line { color: var(--ink-soft); font-size: 0.98rem; margin: 0 0 1.6rem; font-style: italic; }
+
+  .quickfacts {
+    background: var(--paper-raised); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow);
+    padding: 1.3rem 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem 1.75rem;
+  }
+  .qf dt { font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-faint); margin: 0 0 0.2rem; }
+  .qf dd { margin: 0; font-size: 0.95rem; }
+
+  section { margin: 3.4rem 0; scroll-margin-top: 1.5rem; }
+  @media (max-width: 860px) { section { scroll-margin-top: 3.4rem; } }
+  .section-head { display: flex; align-items: baseline; gap: 0.7rem; margin-bottom: 1.1rem; padding-bottom: 0.6rem; border-bottom: 1px solid var(--line); }
+  h2 { font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif; font-weight: 500; font-size: 1.5rem; margin: 0; text-wrap: balance; }
+  h3 { font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif; font-weight: 600; font-size: 1.08rem; margin: 1.6rem 0 0.6rem; color: var(--ink); }
+  .prose { max-width: 68ch; }
+  .prose p { margin: 0 0 0.9rem; }
+  .prose ul { margin: 0 0 0.9rem; padding-left: 1.2rem; }
+  .prose li { margin-bottom: 0.35rem; }
+  .subtle { color: var(--ink-soft); }
+  .fine { font-size: 0.86rem; color: var(--ink-soft); }
+
+  .callout {
+    border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 8px 8px 0;
+    padding: 0.9rem 1.1rem; margin: 1rem 0 1.3rem; max-width: 68ch;
+  }
+  .callout.note { border-left-color: var(--note); background: var(--note-soft); }
+  .callout p, .callout ul { margin: 0 0 0.5rem; font-size: 0.94rem; }
+  .callout p:last-child, .callout ul:last-child { margin-bottom: 0; }
+  .callout ul { padding-left: 1.1rem; }
+  .callout-label { font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700; color: var(--accent-strong); margin: 0 0 0.5rem; }
+  .callout.note .callout-label { color: var(--note); }
+  .callout-group { display: flex; flex-direction: column; gap: 0.8rem; margin: 1rem 0 1.3rem; }
+
+  .grading-overview { background: var(--paper-raised); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); padding: 1.5rem 1.6rem 1.3rem; margin: 1.2rem 0 1.8rem; }
+  .bar { display: flex; height: 34px; border-radius: 6px; overflow: hidden; border: 1px solid var(--line); flex: 1; }
+  .bar-seg.quiz { background: var(--accent); }
+  .bar-seg.assign { background: color-mix(in srgb, var(--accent) 60%, var(--paper-raised)); }
+  .bar-seg.exam { background: var(--accent-strong); }
+  .bar-bonus { margin-left: 6px; height: 34px; border: 1.5px dashed var(--note); border-radius: 6px; display: flex; align-items: center; justify-content: center; padding: 0 0.6rem; font-size: 0.78rem; color: var(--note); white-space: nowrap; }
+  .bar-row { display: flex; align-items: stretch; }
+  .legend { display: flex; flex-wrap: wrap; gap: 0.9rem 1.6rem; margin-top: 1rem; font-size: 0.86rem; }
+  .legend-item { display: flex; align-items: center; gap: 0.5rem; color: var(--ink-soft); }
+  .legend-item .swatch { width: 11px; height: 11px; border-radius: 3px; flex: none; }
+  .legend-item .swatch.quiz { background: var(--accent); }
+  .legend-item .swatch.assign { background: color-mix(in srgb, var(--accent) 60%, var(--paper-raised)); }
+  .legend-item .swatch.exam { background: var(--accent-strong); }
+  .legend-item .swatch.bonus { background: transparent; border: 1.5px dashed var(--note); }
+  .legend-item strong { color: var(--ink); font-weight: 600; }
+
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); }
+  table { border-collapse: collapse; width: 100%; min-width: 480px; background: var(--paper-raised); }
+  th, td { text-align: left; padding: 0.65rem 0.9rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  thead th { font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); background: var(--accent-soft); }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: color-mix(in srgb, var(--accent-soft) 45%, transparent); }
+  td.points, th.points { text-align: right; }
+  .scale-table tr.grade-a td:first-child { color: var(--accent-strong); font-weight: 700; }
+
+  .week-label { font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-faint); padding: 1rem 0.9rem 0.3rem; }
+  tr.no-class td { color: var(--ink-faint); background: color-mix(in srgb, var(--line) 35%, transparent); }
+  tr.exam-row td { background: var(--note-soft); }
+  tr.exam-row .topic { color: var(--note); font-weight: 700; }
+  td.date { white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--ink-soft); width: 6.5rem; }
+  td.day { white-space: nowrap; color: var(--ink-faint); font-size: 0.82rem; width: 3rem; }
+  .due { display: block; font-size: 0.85rem; color: var(--ink-soft); margin-top: 0.15rem; }
+  .due.deadline { color: var(--note); }
+
+  footer { max-width: 68ch; margin-top: 4rem; padding-top: 1.2rem; border-top: 1px solid var(--line); font-size: 0.82rem; color: var(--ink-faint); }
+
+  @media print { nav.toc { display: none; } .shell { grid-template-columns: 1fr; } body { background: #fff; color: #111; } }
+</style>
+
+<div class="shell">
+  <nav class="toc" aria-label="Section navigation">
+    <p class="toc-mark">HDFS 2300</p>
+    <ul>
+      <li><a href="#overview"><span class="glyph"></span>Course Description</a></li>
+      <li><a href="#grading"><span class="glyph"></span>Grading Component Descriptions</a></li>
+      <li><a href="#scale"><span class="glyph"></span>Grading System &amp; Scale</a></li>
+      <li><a href="#policies"><span class="glyph"></span>Course Policies</a></li>
+      <li><a href="#university"><span class="glyph"></span>University Policies</a></li>
+      <li><a href="#schedule"><span class="glyph"></span>Class Schedule</a></li>
+    </ul>
+  </nav>
+
+  <main>
+    <header class="masthead">
+      <p class="eyebrow">Fall 2026</p>
+      <h1 class="course-title">HDFS 2300: Family Interaction Processes</h1>
+      <p class="subject-line">*This syllabus is subject to change throughout the semester, and if it does, notice will be given*</p>
+
+      <dl class="quickfacts">
+        <div class="qf"><dt>Instructor:</dt><dd>Tianmei Zhu</dd></div>
+        <div class="qf"><dt>Classroom:</dt><dd>FSB 220</dd></div>
+        <div class="qf"><dt>Pronouns:</dt><dd>She/her/hers</dd></div>
+        <div class="qf"><dt>Class time:</dt><dd>MWF 2:30-3:20PM</dd></div>
+        <div class="qf"><dt>Phone:</dt><dd>(617)-982-9677</dd></div>
+        <div class="qf"><dt>E-mail:</dt><dd>tianmei.zhu@uconn.edu (email is the best way to reach me)</dd></div>
+        <div class="qf" style="grid-column: 1 / -1;"><dt>Office hours:</dt><dd>See standing announcement on HuskyCT for most up-to-date hours, and by appointments (if you are unable to attend a scheduled appointment, please notify me in advance)</dd></div>
+      </dl>
+    </header>
+
+    <section id="overview">
+      <div class="section-head"><h2>Required Textbooks:</h2></div>
+      <div class="prose">
+        <p>Adamsons, K., &amp; Sabatelli, R. (2025, 6th ed.). <em>Family Interaction: Multigenerational and Developmental Perspectives on Diversity Within and Between Families.</em> Cognella.</p>
+        <p>* You can purchase the textbook through &ldquo;Book Bundle Digital Access&rdquo; section on HuskyCT. Please select the option that best suits your needs. There may be additional recommended readings for chapters throughout the semester, which you should be able to access in HuskyCT.</p>
+      </div>
+
+      <h3>Course Description</h3>
+      <div class="prose">
+        <p>This course examines the interaction processes of family systems including communication processes, bonding behaviors, management of conflict and aggression, and negotiation of family crises. We will be applying three perspectives (structural, intergenerational, and contextual models) to our exploration of family functioning.</p>
+      </div>
+
+      <h3>Course Goals and Objectives</h3>
+      <div class="prose">
+        <p>By the end of the semester, students should be able to:</p>
+        <ul>
+          <li>Analyze different definitions and the sources of these definitions of &ldquo;family&rdquo;</li>
+          <li>Apply family systems perspectives to family dynamics and interaction processes, both within and across generations</li>
+          <li>Analyze the role of power in family systems.</li>
+          <li>Identify communication and conflict strategies in family relationships and the outcomes of various strategies.</li>
+          <li>Explain how contextual factors influence families and their abilities to function.</li>
+          <li>Critique theories, policies, and popular representations of families.</li>
+          <li>Understand the strengths of unique family cultures and diverse family forms and structures.</li>
+        </ul>
+      </div>
+
+      <h3>HuskyCT</h3>
+      <div class="prose">
+        <p>Information for this course is available through HuskyCT. The course website contains a variety of information, including a copy of the syllabus, your grades, the PowerPoint slides, and a variety of links to other sites relevant to this class. There will be online assignments, quizzes, and exams that need to be completed on HuskyCT. The information provided on HuskyCT is meant to serve as a supplement, rather than an alternative, to regular class attendance and participation. You are still responsible for all information discussed during class time.</p>
+      </div>
+    </section>
+
+    <section id="grading">
+      <div class="section-head"><h2>Course Grading Component Descriptions</h2></div>
+
+      <div class="grading-overview">
+        <div class="bar-row">
+          <div class="bar">
+            <div class="bar-seg quiz" style="width: 23.4%;"></div>
+            <div class="bar-seg assign" style="width: 21.9%;"></div>
+            <div class="bar-seg exam" style="width: 54.7%;"></div>
+          </div>
+          <div class="bar-bonus">+6 bonus</div>
+        </div>
+        <div class="legend">
+          <span class="legend-item"><span class="swatch quiz"></span>Reading Quizzes — <strong class="num">150 pts</strong></span>
+          <span class="legend-item"><span class="swatch assign"></span>Assignments — <strong class="num">140 pts</strong></span>
+          <span class="legend-item"><span class="swatch exam"></span>Exams — <strong class="num">350 pts</strong></span>
+          <span class="legend-item"><span class="swatch bonus"></span>Feedback bonus — <strong class="num">6 pts</strong></span>
+        </div>
+      </div>
+
+      <h3>Reading Quizzes (150 points total)</h3>
+      <div class="prose">
+        <p>Before we start covering each chapter in class, you will take a multiple-choice reading quiz to make sure that you keep up with the readings and are prepared to learn about and discuss the material in class. Quizzes are posted on HuskyCT and are due by the start of class time (2:30 p.m.) on the day we are scheduled to begin a chapter in class. Please note, they are NOT due on any particular day of the week! Students often start noticing a pattern and then think &ldquo;oh, they are always due on x day,&rdquo; but they are not &ndash; they are due on whatever day we start a chapter in class! It is a good idea to take the quiz early, so that technical issues do not interfere with your ability to complete the quiz, and actually, you can take quizzes any time before the due date. Therefore, <strong>I do not accept late quizzes even if it is not &ldquo;your fault,&rdquo;</strong> and <strong>there are no make-up quizzes unless there are emergency circumstances that result in you missing more than one week of class</strong> (e.g., hospitalized for more than a week, with verified documentation provided).</p>
+        <p>However, there will be 17 quizzes (one per chapter + a syllabus quiz), each with 10 multiple choice questions, worth 10 points each for a total of 170 possible points, but the grading of quizzes will be &ldquo;out of&rdquo; 150 points; that is to say, only your top 15 of 17 quiz scores count (150 points total); your two lowest scores are automatically dropped, which covers missed or low-scoring quizzes without needing make-ups.</p>
+        <p>You will have one attempt at each quiz and they are open book, but quizzes are timed &ndash; you have 15 minutes to take the quiz, so do not count on having time to look up the answers. Make sure you do the reading first.</p>
+      </div>
+
+      <h3>Assignments (140 points total)</h3>
+      <div class="prose">
+        <p>For most chapters, we will have journal entry activities in the end that ask you to reflect on how the specific topics covered in class relate to your own life, media, or news you&rsquo;ve seen. These activities will be given in class and will always relate to the topics being discussed that day. They will be due before the beginning of the next class (the class we move to the next new chapter).</p>
+      </div>
+
+      <div class="callout">
+        <p class="callout-label">The Magic Word</p>
+        <p>For each activity, I will display a <strong>&ldquo;magic random word&rdquo;</strong> on the screen. When you submit your journal entry, you must include that word on the first line of your submission. Failing to include the word indicates that you were not present when the assignment was given, and you will receive a <strong>0</strong> for that assignment. This policy also applies if you arrive late or leave class early and you didn&rsquo;t see the word. Note: The journal entry tied to the Two American Families documentary (the week of November 18) does not require the magic word, since there is no in-class session that week; submission instructions for that entry will be posted on HuskyCT.</p>
+      </div>
+
+      <div class="prose">
+        <p>There will be a total of 16 journal entry assignments, each worth 10 points. Two of the lowest scores will be dropped; thus 14 entries will count toward your final grade for a total of 140 points. For this reason, students need not e-mail me if an assignment will be missed for sickness, etc.</p>
+        <p>In extraordinary circumstances which would prevent you from completing assignments for a longer period of time, please email me with documentation of an excusable reason (e.g., hospitalization) as soon as possible, and you can make up unlimited (within reason) assignments during that designated time window. The following criteria need to be satisfied:</p>
+        <ul>
+          <li>Provide documentation upon your return to class (or before, if possible).</li>
+          <li>Complete the assignments within <strong>one week of your return to class</strong>. Otherwise the assignments will not be accepted.</li>
+        </ul>
+      </div>
+
+      <h3>Exams (350 points)</h3>
+      <div class="prose">
+        <p>There will be three exams in this class: a mini-exam on the foundational material (50 points), a midterm (100 points), and a cumulative final exam (200 points). All exams will be held online on HuskyCT and consist of multiple-choice questions. You will take each exam on your own — <strong>we will not meet as a class on the scheduled exam days</strong> — and each exam will be available to open during a 48-hour window (between 12:01 a.m. the first day and 11:59 p.m. the second day, ET, on the scheduled exam dates). The time allotted for each exam varies depending on the number of questions on that particular exam. The final exam will be 2 hours. The exams are open-book and open-note; however, please do not assume that having your slides and notes on hand means you don't need to prepare. The time limit is deliberately set so that you will not have enough time to look up every answer from scratch — you should study and review the material beforehand, just as you would for any exam.</p>
+        <p>You will be responsible for and tested on information presented during lectures, class discussions, media presentations, and your assigned readings. You must complete each exam entirely on your own, without assistance from others. Because each exam remains open for a 48-hour window, you may not discuss, share, or post any exam questions, answers, or content with anyone — including classmates who have not yet taken the exam — until the window has closed for the entire class. Doing so is a violation of academic integrity. If you have accommodations for exams through the Center for Students with Disabilities, please contact me at the beginning of the semester to make arrangements. <strong>You must request it</strong> &ndash; it is not set up for you automatically.</p>
+        <p>Exams will not be administered early, and make-up exams will only be given in two situations, which have different notice requirements:</p>
+      </div>
+
+      <div class="callout">
+        <p class="callout-label">Make-Up Exams — Two Tracks</p>
+        <ul>
+          <li>Officially school-sponsored events (e.g., athletics, drama, band, student government): Because these are scheduled in advance, <strong>you must contact me at least 48 hours before the exam window opens</strong>, along with documentation of the conflict.</li>
+          <li>Verified emergencies (e.g., hospitalization, serious illness, family emergency): Because these cannot be predicted, advance notice is not absolutely required. <strong>48 hours in advance is preferred.</strong> However, if you do not have a chance to do so, contact me immediately upon your return to class and provide verified documentation at that time.</li>
+        </ul>
+      </div>
+
+      <div class="prose">
+        <p><strong>Personal travel plans do not constitute an emergency.</strong> Please note that exam dates may be rescheduled due to snow days or other university closures; exam dates noted on the syllabus are tentative. If you miss an exam without a documented, qualifying excuse under one of the two categories above, <strong>you will receive a score of 0.</strong> All make-up exams must be completed <strong>within one week of the original exam date</strong>, with the exception of the final exam.</p>
+        <p>Please note: Rescheduling of final exams MUST be approved by the Dean of Students office. Per the Dean of Students:</p>
+        <p class="fine">Students are required to be available for their exam during the time stated in the Registrar's Office schedule. If you have a conflict with this time you must visit the Dean of Students Office to discuss the possibility of rescheduling this final. The Dean of Students REQUIRES advance notice from students who have prior knowledge of a conflict (i.e., bunched finals, religious obligation, legal/medical appointments&hellip;).</p>
+      </div>
+
+      <h3>Mid-Semester &amp; End-of-Semester Feedback (6 bonus points)</h3>
+      <div class="prose">
+        <p>Midway through the semester and again at the end, I will send you a personalized Qualtrics survey link via HuskyCT/email to gather your feedback on how I can improve the class experience and better support your engagement. Your link lets me confirm completion for bonus credit, but your actual responses are recorded separately and are never connected to your name in what I see — I will only know that you completed the survey, not what you wrote. Completing each survey will earn you a 3-point bonus, and completing both will earn you a total of 6 bonus points. Note that students may sometimes have differing opinions; I will consider all feedback carefully and aim to reflect the majority&rsquo;s preferences, but I still appreciate every individual suggestion. This is to say if your suggestion is not taken, it simply means my current instruction may not be able to accommodate it yet, not to mean that your idea is bad or not worth considering.</p>
+      </div>
+    </section>
+
+    <section id="scale">
+      <div class="section-head"><h2>Course Grading System</h2></div>
+      <div class="prose"><p>Final grades will be determined by the following point system:</p></div>
+
+      <div class="table-wrap" style="margin-bottom: 1.6rem;">
+        <table>
+          <tbody>
+            <tr><td>15 out of 17 quizzes (15*10 points each)</td><td class="points num">150 points</td></tr>
+            <tr><td>14 out of 16 assignments (14*10 points each)</td><td class="points num">140 points</td></tr>
+            <tr><td>3 Exams (50+100+200 points)</td><td class="points num">350 points</td></tr>
+            <tr><td>*Feedback Survey Bonus (2*3 points each)</td><td class="points num">6 points</td></tr>
+            <tr><td><strong>Total 640 points, excluding the bonus points</strong></td><td class="points"></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Grading Scale</h3>
+      <div class="table-wrap">
+        <table class="scale-table">
+          <thead>
+            <tr><th>Letter Grade</th><th>Percentage Range</th><th class="points">Points (out of 640)</th></tr>
+          </thead>
+          <tbody>
+            <tr class="grade-a"><td>A</td><td class="num">93% and above</td><td class="points num">595&ndash;640 points</td></tr>
+            <tr><td>A-</td><td class="num">90&ndash;92%</td><td class="points num">576&ndash;594 points</td></tr>
+            <tr><td>B+</td><td class="num">87&ndash;89%</td><td class="points num">557&ndash;575 points</td></tr>
+            <tr><td>B</td><td class="num">83&ndash;86%</td><td class="points num">531&ndash;556 points</td></tr>
+            <tr><td>B-</td><td class="num">80&ndash;82%</td><td class="points num">512&ndash;530 points</td></tr>
+            <tr><td>C+</td><td class="num">77&ndash;79%</td><td class="points num">493&ndash;511 points</td></tr>
+            <tr><td>C</td><td class="num">73&ndash;76%</td><td class="points num">467&ndash;492 points</td></tr>
+            <tr><td>C-</td><td class="num">70&ndash;72%</td><td class="points num">448&ndash;466 points</td></tr>
+            <tr><td>D+</td><td class="num">67&ndash;69%</td><td class="points num">429&ndash;447 points</td></tr>
+            <tr><td>D</td><td class="num">63&ndash;66%</td><td class="points num">403&ndash;428 points</td></tr>
+            <tr><td>D-</td><td class="num">60&ndash;62%</td><td class="points num">384&ndash;402 points</td></tr>
+            <tr><td>F</td><td class="num">Below 60%</td><td class="points num">0&ndash;383 points</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="fine" style="margin-top: 0.8rem;">Note: These grades already include rounding, except for the grade of F. <strong>I will not round up to a D-.</strong></p>
+    </section>
+
+    <section id="policies">
+      <div class="section-head"><h2>Course Policies</h2></div>
+
+      <h3>Accommodations:</h3>
+      <div class="prose">
+        <p>If you have a documented disability for which you are or may be requesting an accommodation, you are encouraged to contact me and the Center for Students with Disabilities (Wilbur Cross Building Room 204, (860) 486- 2020 or http://csd.uconn.edu/) as soon as possible. All information regarding disabilities is confidential. And I will do everything in my power to accommodate students with disabilities. This policy derives from the University&rsquo;s commitment to nondiscrimination for all persons in employment, academic programs, and access to facilities, programs, activities, and services. More information here: http://policy.uconn.edu/2011/05/24/people-with-disabilities-policy-statement/</p>
+        <p>If you experience an emergency that interferes with your ability to complete coursework, I will do my best to work with you to determine an appropriate plan. However, <strong>notify me as soon as possible</strong>. I will not accept requests made at the end of the semester to make up work that was missed earlier in the course due to a lack of timely communication.</p>
+      </div>
+
+      <h3>Classroom Conduct Policy</h3>
+      <div class="prose">
+        <p>Please be respectful of your classmates&rsquo; learning experience. Disruptive behaviors—such as talking over others, using devices in a distracting way, or interrupting class discussions—are not acceptable. If such disruptions occur repeatedly, I will address them seriously and take appropriate action to maintain a positive and focused learning environment. In addition, because this class focuses on families, the material presented and discussed in this class will include topics that affect each of us personally and in different ways. I expect students in this class to be sensitive to and respectful of differences in attitudes, opinions, and experiences of others in the class, so that this is a safe environment for discussion of sometimes difficult and controversial topics.</p>
+      </div>
+
+      <h3>Anti-Discrimination and Respect for Diversity</h3>
+      <div class="prose">
+        <p>This class is built on respect, open-mindedness, and critical thinking. We will explore diverse perspectives and experiences, and I expect everyone to engage in discussions with empathy and curiosity. Discrimination, prejudice, or disrespectful behavior of any kind will not be tolerated. Our goal is to create a learning environment where every student feels valued, included, and safe to share their thoughts and experiences.</p>
+      </div>
+
+      <h3>AI Policy</h3>
+      <div class="prose">
+        <p>Generative AI can be a valuable tool that facilitates learning in many ways. It is a resource that the new generation should actively learn to use in order to keep up with technological developments. However, AI must be used appropriately and ethically. Students should never provide AI tools with identifying information, confidential information, or sensitive personal information. Based on the design of this course, the use of AI tools is restricted as follows:</p>
+      </div>
+
+      <div class="callout-group">
+        <div class="callout">
+          <p><strong>Quizzes and Exams:</strong> <strong>Do not use AI</strong>. The use of AI tools is strictly prohibited during quizzes and exams. These assessments are designed to evaluate your individual understanding of course concepts and your ability to apply what you have learned. Using AI during a quiz or exam constitutes a violation of this course policy and may result in penalties under the University's academic integrity procedures, including, but not limited to, receiving a score of zero on the assessment and/or additional consequences depending on the circumstances and severity of the violation.</p>
+        </div>
+        <div class="callout">
+          <p><strong>Written Assignments:</strong> AI tools may be used as a learning aid for written assignments (e.g., brainstorming, improving grammar, or organizing ideas), but the final submission must reflect your own understanding, analysis, and writing. Any use of AI must be appropriately acknowledged at the end of your assignment. For example, you might write, "I used AI for proofreading" or "I used AI to gather background information from [website name]." Failure to disclose AI use will be considered a violation of this course policy and may result in a zero on the assignment.</p>
+        </div>
+        <div class="callout">
+          <p><strong>Learning and Understanding Class Content:</strong> It is always recommended that you consult with me first, as AI has the potential to mislead users due to hallucinations. In other words, AI may defer to your assumptions or provide inaccurate conclusions rather than correct information. If you choose to use AI for tutoring purposes, you are responsible for verifying the accuracy of the information and for any mistakes or misunderstandings that result from relying on AI-generated content.</p>
+        </div>
+      </div>
+
+      <div class="prose">
+        <p>Again, this class will not penalize you for using AI appropriately; but it will penalize you for using AI in prohibited situations or for failing to properly acknowledge its use when disclosure is required. I recognize that no AI detection tool provides definitive evidence of AI misuse. However, if there are concerns regarding the originality of your work, especially supported by multiple detection tools consistently, you may be asked to explain your thinking process and the development of your work.</p>
+      </div>
+
+      <h3>Privacy and Intellectual Rights</h3>
+      <div class="prose">
+        <p>My lectures are protected by state common law and federal copyright law. They are my own individual expression. Although you are authorized to take notes in class, thereby creating a derivative work from my lecture, the authorization extends only to making one set of notes for your own personal use and no other use, except in the case of a student with a disability (if the Center for Students with Disabilities has determined that it is a reasonable accommodation). You are not authorized to record my lectures, provide your notes to anyone outside of this class, or make any commercial use of them without my express prior permission.</p>
+      </div>
+
+      <h3>Absence Policy</h3>
+      <div class="prose">
+        <p><em>If you are sick&hellip;</em></p>
+        <p>If you are feeling sick, please do not come to class. I value your health and the well-being of everyone in our learning community. However, if you are ill, you are expected to notify me <strong>as soon as possible</strong>. You do not need to disclose the nature of your illness; however, you will need to work with me to determine how you will complete coursework during your absence.</p>
+        <p>If life circumstances are affecting your ability to focus on courses and your overall UConn experience, students can email the Dean of Students at dos@uconn.edu to request support. Regional campus students should email the Student Services staff at their home campus to request support.</p>
+        <p><strong>*Resources for Students Experiencing Distress: </strong>Students who feel they may benefit from speaking with a mental health professional can find support and resources through Student Health and Wellness – Mental Health (SHaW-MH). Through SHaW-MH, students may schedule an appointment with a mental health professional for confidential support or seek recommendations and referrals for any mental health or psychological concern. Mental health services are included as part of the university's student health insurance plan and are also partially funded through university fees. Students who are not enrolled in the UConn Student Health Insurance Plan may use most major insurance plans. To access services, please call 860-486-4705 or visit https://studenthealth.uconn.edu/.</p>
+        <p><em>If you have university-sanctioned obligations&hellip;</em></p>
+        <p>Students who are going to miss class due to participation in university-sanctioned activities (e.g., athletics, student government, band) must identify themselves and provide documentation prior to missing class and must make arrangements to complete any missed work within a week of returning to class. It is YOUR responsibility to find out what work you might have missed. Any work submitted after a week will NOT be accepted.</p>
+      </div>
+    </section>
+
+    <section id="university">
+      <div class="section-head"><h2>University Policies</h2></div>
+
+      <h3>Academic Integrity</h3>
+      <div class="prose">
+        <p>The University of Connecticut is an institution that is dedicated to learning. Integrity, honesty, and fairness are the foundation of the educational process. Academic integrity is the pursuit of scholarly activity free from fraud and deception and is an educational objective of this institution. Academic misconduct violates these principles, and demeans not only the student committing the act of misconduct, but the entire University community. Violating academic integrity is considered a serious offense by both the university and me and is treated accordingly. Violations of academic integrity can be punishable by failure on the specific assignment or portion of the course, failure of the entire course, or other sanctions as imposed by the university. Academic misconduct is defined in Responsibilities of Community Life: The Student Code, Part VI, Section A, p. 17:</p>
+        <p class="fine">Academic misconduct includes, but is not limited to, providing or receiving assistance in a manner not authorized by the instructor in the creation of work to be submitted for academic evaluation (e.g., papers, projects, and examinations); any attempt to influence improperly (e.g., bribery, threats) any member of the faculty, staff, or administration of the University in any matter pertaining to academics or research; presenting, as one&rsquo;s own, the ideas or words of another for academic evaluation; doing unauthorized work for which another person will receive credit to be evaluated; and presenting the same or substantially the same papers or projects in two or more courses without the explicit permission of the instructors involved.</p>
+        <p>A student who knowingly assists another student in committing an act of academic misconduct shall be equally accountable for the violation and shall be subject to the sanctions and other remedies described in the Student Code.</p>
+      </div>
+
+      <h3>Copyrights</h3>
+      <div class="prose">
+        <p>Course materials provided to you, including, but not limited to presentations, PowerPoints, lectures, tests, outlines, study guides, and similar materials, are copyrighted protected by the faculty member teaching this course. You may make copies of course materials solely for your own use. You may NOT copy, reproduce, or electronically transmit any course materials to any person or company for commercial or other purposes without the faculty member&rsquo;s express permission. Violation of this prohibition may subject the student to discipline under the University of Connecticut Student Code of Conduct and Academic Integrity policies.</p>
+      </div>
+
+      <h3>Policy Against Discrimination, Harassment and Related Interpersonal Violence</h3>
+      <div class="prose">
+        <p>The University is committed to maintaining an environment free of discrimination or discriminatory harassment directed toward any person or group within its community – students, employees, or visitors. Academic and professional excellence can flourish only when each member of our community is assured an atmosphere of mutual respect. All members of the University community are responsible for the maintenance of an academic and work environment in which people are free to learn and work without fear of discrimination or discriminatory harassment. In addition, inappropriate romantic relationships can undermine the University&rsquo;s mission when those in positions of authority abuse or appear to abuse their authority. To that end, and in accordance with federal and state law, the University prohibits discrimination and discriminatory harassment, as well as inappropriate romantic relationships, and such behavior will be met with appropriate disciplinary action, up to and including dismissal from the University. More information is available at http://policy.uconn.edu/?p=2884.</p>
+      </div>
+
+      <h3>Office of Emergency Management on Emergency Preparedness</h3>
+      <div class="prose">
+        <p>In case of inclement weather, a natural disaster, or a campus emergency, the University communicates through email and text message. Students are encouraged to sign up for alerts through http://alert.uconn.edu. Students should be aware of emergency procedures, and further information is available through the Office of Emergency Management at http://publicsafety.uconn.edu/emergency/.</p>
+      </div>
+
+      <h3>Sexual Assault Reporting Policy</h3>
+      <div class="prose">
+        <p>To protect the campus community, all non-confidential University employees (including faculty) are required to report assaults they witness or are told about to the Office of Diversity &amp; Equity under the Sexual Assault Response Policy. Please note that this includes previous assaults, whether or not they occurred while you attended UConn. The University takes all reports with the utmost seriousness. Please be aware that while the information you provide will remain private, it will not be confidential and will be shared with University officials who can help. However, it is only provided so that resources can be brought to the attention of the student. More information is available at http://sexualviolence.uconn.edu/. There are also rules for the course that have been set up to enhance the learning environment and reduce the possibility of improper conduct.</p>
+      </div>
+    </section>
+
+    <section id="schedule">
+      <div class="section-head"><h2>Class Schedule</h2></div>
+      <p class="fine" style="margin-top: -0.5rem; margin-bottom: 1.2rem;">(May change to accommodate instructor &amp; student needs)</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th class="date">Date</th><th class="day">Day</th><th>Topic</th><th>Due Work</th></tr>
+          </thead>
+          <tbody>
+
+            <tr><td colspan="4" class="week-label">Week 1</td></tr>
+            <tr><td class="date num">8/31</td><td class="day">Mon</td><td class="topic">Introduction and syllabus review</td><td></td></tr>
+            <tr><td class="date num">9/2</td><td class="day">Wed</td><td class="topic">Chapter 1 - The Family as a System</td><td><span class="due">Chapter 1 reading quiz due by 2:30pm</span><span class="due deadline">Syllabus quiz due by 11:59 pm</span></td></tr>
+            <tr><td class="date num">9/4</td><td class="day">Fri</td><td class="topic">Chapter 1</td><td></td></tr>
+
+            <tr><td colspan="4" class="week-label">Week 2</td></tr>
+            <tr class="no-class"><td class="date num">9/7</td><td class="day">Mon</td><td class="topic">NO CLASS &ndash; LABOR DAY HOLIDAY</td><td></td></tr>
+            <tr><td class="date num">9/9</td><td class="day">Wed</td><td class="topic">Chapter 2 &ndash; Family strategies</td><td><span class="due">Chapter 2 reading quiz due by 2:30pm</span></td></tr>
+            <tr><td class="date num">9/11</td><td class="day">Fri</td><td class="topic">Chapter 2</td><td></td></tr>
+
+            <tr><td colspan="4" class="week-label">Week 3</td></tr>
+            <tr><td class="date num">9/14</td><td class="day">Mon</td><td class="topic">Chapter 3 &ndash; The importance of family context</td><td><span class="due">Chapter 3 reading quiz due by 2:30pm</span><span class="due">Assignment 1 due by 2:30pm</span><span class="due deadline">Last Day to Add/Drop Courses</span></td></tr>
+            <tr><td class="date num">9/16</td><td class="day">Wed</td><td class="topic">Chapter 3</td><td></td></tr>
+            <tr><td class="date num">9/18</td><td class="day">Fri</td><td class="topic">Chapter 4 &ndash; Judging family strategies</td><td><span class="due">Chapter 4 reading quiz due by 2:30pm</span><span class="due">Assignment 2 due by 2:30pm</span></td></tr>
+
+            <tr><td colspan="4" class="week-label">Week 4</td></tr>
+            <tr><td class="date num">9/21</td><td class="day">Mon</td><td class="topic">Chapter 4</td><td></td></tr>
+            <tr class="exam-row"><td class="date num">9/23</td><td class="day">Wed</td><td class="topic">NO IN-CLASS MEETING: MINI-EXAM &ndash; CHAPTERS 1&ndash;4</td><td><span class="due">Taken online on HuskyCT; open window is two days</span><span class="due">Assignment 3 due by 2:30pm</span></td></tr>
+            <tr><td class="date num">9/25</td><td class="day">Fri</td><td class="topic">Chapter 5 &ndash; Socioeconomic status, class, and family structure</td><td><span class="due">Chapter 5 reading quiz due by 2:30pm</span></td></tr>
+
+            <tr><td colspan="4" class="week-label">Week 5</td></tr>
+            <tr><td class="date num">9/28</td><td class="day">Mon</td><td class="topic">Chapter 5</td><td></td></tr>
+            <tr><td class="date num">9/30</td><td class="day">Wed</td><td class="topic">Chapter 5</td><td></td></tr>
+            <tr><td class="date num">10/2</td><td class="day">Fri</td><td class="topic">Chapter 6 &ndash; Race, Ethnicity, and Immigration</td><td><span class="due">Chapter 6 reading quiz due by 2:30pm</span><span class="due">Assignment 4 due by 2:30pm</span></td></tr>
+
+            <tr><td colspan="4" class="week-label">Week 6</td></tr>
+            <tr><td class="date num">10/5</td><td class="day">Mon</td><td class="topic">Chapter 6</td><td></td></tr>
+            <tr><td class="date num">10/7</td><td class="day">Wed</td><td class="topic">Chapter 6</td><td></td></tr>
+            <tr><td class="date num">10/9</td><td class="day">Fri</td><td class="topic">Chapter 7 &ndash; Gender and Sexuality</td><td><span class="due">Chapter 7 reading quiz due by 2:30pm</span><span class="due">Assignment 5 due by 2:30pm</span></td></tr>
+
+            <tr><td colspan="4" class="week-label">Week 7</td></tr>
+            <tr><td class="date num">10/12</td><td class="day">Mon</td><td class="topic">Chapter 7</td><td></td></tr>
+            <tr><td class="date num">10/14</td><td class="day">Wed</td><td class="topic">Chapter 8 &ndash; Communication, conflict, and intimacy</td><td><span class="due">Chapter 8 reading quiz due by 2:30pm</span><span class="due">Assignment 6 due by 2:30pm</span></td></tr>
+            <tr><td class="date num">10/16</td><td class="day">Fri</td><td class="topic">Chapter 8</td><td></td></tr>
+
+            <tr><td colspan="4" class="week-label">Week 8</td></tr>
+            <tr><td class="date num">10/19</td><td class="day">Mon</td><td class="topic">Chapter 8</td><td></td></tr>
+            <tr><td class="date num">10/21</td><td class="day">Wed</td><td class="topic">Chapter 9 &ndash; Power, violence, and abuse</td><td><span class="due">Chapter 9 reading quiz due by 2:30pm</span><span class="due">Assignment 7 due by 2:30pm</span></td></tr>
+            <tr><td class="date num">10/23</td><td class="day">Fri</td><td class="topic">Chapter 9</td><td></td></tr>
+
+            <tr><td colspan="4" class="week-label">Week 9</td></tr>
+            <tr><td class="date num">10/26</td><td class="day">Mon</td><td class="topic">Chapter 9</td><td></td></tr>
+            <tr class="exam-row"><td class="date num">10/28</td><td class="day">Wed</td><td class="topic">NO IN-CLASS MEETING: MIDTERM EXAM &ndash; CHAPTERS 5&ndash;9</td><td><span class="due">Taken online on HuskyCT; open window is two days</span><span class="due">Assignment 8 due by 2:30pm</span></td></tr>
+            <tr><td class="date num">10/30</td><td class="day">Fri</td><td class="topic">Chapter 10 &ndash; Transitions into lifetime partnerships</td><td><span class="due">Chapter 10 reading quiz due by 2:30pm</span></td></tr>
+
+            <tr><td colspan="4" class="week-label">Week 10</td></tr>
+            <tr><td class="date num">11/2</td><td class="day">Mon</td><td class="topic">Chapter 10</td><td></td></tr>
+            <tr><td class="date num">11/4</td><td class="day">Wed</td><td class="topic">Chapter 11 &ndash; Transition to parenthood</td><td><span class="due">Chapter 11 reading quiz due by 2:30pm</span><span class="due">Assignment 9 due by 2:30pm</span></td></tr>
+            <tr><td class="date num">11/6</td><td class="day">Fri</td><td class="topic">Chapter 11</td><td></td></tr>
+
+            <tr><td colspan="4" class="week-label">Week 11</td></tr>
+            <tr><td class="date num">11/9</td><td class="day">Mon</td><td class="topic">Chapter 11</td><td></td></tr>
+            <tr><td class="date num">11/11</td><td class="day">Wed</td><td class="topic">Chapter 12 &ndash; The parent-child relationship system: Parenting across childhood</td><td><span class="due">Chapter 12 reading quiz due by 2:30pm</span><span class="due">Assignment 10 due by 2:30pm</span></td></tr>
+            <tr><td class="date num">11/13</td><td class="day">Fri</td><td class="topic">Chapter 12</td><td></td></tr>
+
+            <tr><td colspan="4" class="week-label">Week 12</td></tr>
+            <tr><td class="date num">11/16</td><td class="day">Mon</td><td class="topic">Chapter 13 &ndash; Families during middle adulthood</td><td><span class="due">Chapter 13 reading quiz due by 2:30pm</span><span class="due">Assignment 11 due by 2:30pm</span></td></tr>
+            <tr class="no-class"><td class="date num">11/18</td><td class="day">Wed</td><td class="topic">NO IN-CLASS MEETING (instructor traveling) &ndash; WATCH VIDEO ON YOUR OWN: Two American Families</td><td><span class="due">Assignment 12 due by 2:30pm</span></td></tr>
+            <tr class="no-class"><td class="date num">11/20</td><td class="day">Fri</td><td class="topic">NO IN-CLASS MEETING (instructor traveling) &ndash; WATCH VIDEO ON YOUR OWN: Two American Families (continued)</td><td></td></tr>
+
+            <tr><td colspan="4" class="week-label">Week 13</td></tr>
+            <tr class="no-class"><td class="date num">11/23</td><td class="day">Mon</td><td class="topic">NO CLASS &ndash; THANKSGIVING BREAK</td><td><span class="due">Assignment 13 (video reflection) due by 11:59pm</span></td></tr>
+            <tr class="no-class"><td class="date num">11/25</td><td class="day">Wed</td><td class="topic">NO CLASS &ndash; THANKSGIVING BREAK</td><td></td></tr>
+            <tr class="no-class"><td class="date num">11/27</td><td class="day">Fri</td><td class="topic">NO CLASS &ndash; THANKSGIVING BREAK</td><td></td></tr>
+
+            <tr><td colspan="4" class="week-label">Week 14</td></tr>
+            <tr><td class="date num">11/30</td><td class="day">Mon</td><td class="topic">Chapter 14 &ndash; Families in later life</td><td><span class="due">Chapter 14 reading quiz due by 2:30pm</span></td></tr>
+            <tr><td class="date num">12/2</td><td class="day">Wed</td><td class="topic">Chapter 14</td><td></td></tr>
+            <tr><td class="date num">12/4</td><td class="day">Fri</td><td class="topic">Chapter 15 &ndash; Single parenthood, divorce, and remarriage</td><td><span class="due">Chapter 15 reading quiz due by 2:30pm</span><span class="due">Assignment 14 due by 2:30pm</span></td></tr>
+
+            <tr><td colspan="4" class="week-label">Week 15</td></tr>
+            <tr><td class="date num">12/7</td><td class="day">Mon</td><td class="topic">Chapter 15</td><td></td></tr>
+            <tr><td class="date num">12/9</td><td class="day">Wed</td><td class="topic">Chapter 16 &ndash; Death, loss, and bereavement</td><td><span class="due">Chapter 16 reading quiz due by 2:30pm</span><span class="due">Assignment 15 due by 2:30pm</span></td></tr>
+            <tr><td class="date num">12/11</td><td class="day">Fri</td><td class="topic">Last day of instruction &ndash; no new content but review</td><td><span class="due">Assignment 16 due by 2:30pm</span></td></tr>
+
+            <tr class="exam-row"><td class="date num">&mdash;</td><td class="day">&mdash;</td><td class="topic">CUMULATIVE FINAL EXAM (Chapters 1&ndash;16)</td><td><span class="due">Taken online on HuskyCT (12/14-17, 96-hour open window, 2-hour time limit).</span></td></tr>
+
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer>
+      Reference copy generated from the course syllabus for HDFS 2300, Fall 2026 — the Word document on file remains the official version of record.
+    </footer>
+  </main>
+</div>
